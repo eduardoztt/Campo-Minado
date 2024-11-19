@@ -1,9 +1,9 @@
 
 
-const createBoard = (rows,columns ) => {
-    return Array(rows).fill(0).map((_, row)=> {
-        return Array(columns).fill(0).map((_, column) =>{
-            return{
+const createBoard = (rows, columns) => {
+    return Array(rows).fill(0).map((_, row) => {
+        return Array(columns).fill(0).map((_, column) => {
+            return {
                 row,
                 column,
                 opened: false,
@@ -13,34 +13,107 @@ const createBoard = (rows,columns ) => {
                 nearMines: 0,
             }
         })
-    }) 
+    })
 }
 
 const spreadMines = (board, minesAmount) => {
     const rows = board.length
-    const columns =  board[0].length
+    const columns = board[0].length
     let minesPlanted = 0
-    
-    while ( minesPlanted < minesAmount){
+
+    while (minesPlanted < minesAmount) {
         const rowSel = parseInt(Math.random() * rows, 10)
         const columnSel = parseInt(Math.random() * columns, 10)
 
-        if(!board[rowSel][columnSel].mined){
+        if (!board[rowSel][columnSel].mined) {
             board[rowSel][columnSel].mined = true
             minesPlanted++
         }
     }
-        
+
 }
 
 
 const createMinedBoard = (rows, columns, minesAmount) => {
-    const board = createBoard(rows,columns)
+    const board = createBoard(rows, columns)
     spreadMines(board, minesAmount)
-    return(
+    return (
         board
     )
 }
 
+const cloneBoard = board => {
+    return board.map(rows => {
+        return rows.map(field => {
+            return { ...field }
+        })
+    })
+}
 
-export{createMinedBoard}
+const getNeighbords = (board, row, column) => {
+    const neighbors = [];
+    const rows = [row - 1, row, row + 1];  // Vizinho acima, no meio, abaixo
+    const columns = [column - 1, column, column + 1];  // Vizinho à esquerda, no meio, à direita
+
+    // Percorrer as linhas e colunas dos vizinhos
+    rows.forEach(r => {
+        columns.forEach(c => {
+            // Verificar se o índice está dentro dos limites da matriz
+            const validRow = r >= 0 && r < board.length;
+            const validColumn = c >= 0 && c < board[0].length;
+
+            // Adicionar o vizinho se o índice for válido e não for o próprio campo
+            if ((r !== row || c !== column) && validRow && validColumn) {
+                neighbors.push(board[r][c]);
+            }
+        });
+    });
+
+    return neighbors;
+}
+
+
+
+const safeNeighborhood = (board, row, column) => {
+    const safes = (result, neighbor) => result && !neighbor.mined
+    return getNeighbords(board, row, column).reduce(safes, true)
+}
+
+const openField = (board, row, column) => {
+    const field = board[row][column]
+    if (!field.opened) {
+        field.opened = true
+        if (field.mined) {
+            field.exploded = true
+        } else if (safeNeighborhood(board, row, column)) {
+            getNeighbords(board, row, column)
+                .forEach(n => openField(board, n.row, n.column))
+        } else {
+            const neighbor = getNeighbords(board, row, column)
+            field.nearMines = neighbor.filter(n => n.mined).length
+        }
+    }
+}
+
+const fields = board => [].concat(...board)
+
+const hadExplosion = board => fields(board)
+    .filter(field => field.exploded).length > 0
+
+const pedding = field => (field.mined && !field.flagged)
+    || (!field.mined && !field.opened)
+
+const wonGame = board => fields(board).filter(pedding).length === 0
+
+const showMines = board => fields(board).filter(field => field.mined)
+    .forEach(field => field.opened = true)
+
+
+export {
+    createMinedBoard,
+    cloneBoard,
+    openField,
+    hadExplosion,
+    wonGame,
+    showMines
+}
