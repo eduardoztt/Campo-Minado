@@ -4,7 +4,9 @@ import { Alert, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import paramns from "./paramns";
 import Field from "./components/Field";
 import MineField from "./components/MineField";
-import { createMinedBoard, cloneBoard, showMines, wonGame, hadExplosion, openField } from "./functions";
+import { createMinedBoard, cloneBoard, showMines, wonGame, hadExplosion, openField, invertFlag, flagsUsed } from "./functions";
+import Header from "./components/Header";
+import LevelSelection from "./screens/LevelSelection";
 
 export default class App extends Component {
 
@@ -24,40 +26,60 @@ export default class App extends Component {
         const rows = paramns.getRowsAmout()
         return {
             board: createMinedBoard(rows, cols, this.minesAmout()),
-            won: false, 
-            lost: false
+            won: false,
+            lost: false,
+            showLevelSelect: false
         }
     }
 
-    onOpenField = (row,column) => {
-        const board =  cloneBoard(this.state.board)
-        openField(board,row,column)
+    onOpenField = (row, column) => {
+        const board = cloneBoard(this.state.board)
+        openField(board, row, column)
         const lost = hadExplosion(board)
         const won = wonGame(board)
 
-        if(lost){
+        if (lost) {
             showMines(board)
-            Alert.alert('Perdeuu!','Que burro!!!!!')
+            Alert.alert('Perdeuu!', 'Que burro!!!!!')
         }
 
-        if(won){
-            Alert.alert('Parabéns','you win!')
+        if (won) {
+            Alert.alert('Parabéns', 'you win!')
         }
 
-        this.setState({board,lost,won})
+        this.setState({ board, lost, won })
+    }
+
+    onSelectField = (row, column) => {
+        const board = cloneBoard(this.state.board)
+        invertFlag(board, row, column)
+        const won = wonGame(board)
+
+        if (won) {
+            Alert.alert('Parabéns', 'you win!')
+        }
+
+        this.setState({ board, won })
+    }
+
+    onLevelSelect = level => {
+        paramns.difficultLevel = level
+        this.setState(this.createState())
     }
 
     render() {
         return (
             <SafeAreaView style={style.container}>
-                <Text>Iniciando o Campo Minado!</Text>
-                <Text>
-                    Tamanho da Grade:
-                    {paramns.getColumnsAmout()}x{paramns.getRowsAmout()}
-                </Text>
+                <LevelSelection isVisible={this.state.showLevelSelect}
+                    onLevelSelect={this.onLevelSelect}
+                    onCancel={() => this.setState({ showLevelSelect: false })} />
+                <Header flagsLeft={this.minesAmout() - flagsUsed(this.state.board)}
+                    onNewGame={() => this.setState(this.createState())}
+                    onFlagPress={() => this.setState({showLevelSelect: true})} />
                 <View style={style.board}>
-                    <MineField board={this.state.board} 
-                    onOpenField={this.onOpenField}/>
+                    <MineField board={this.state.board}
+                        onOpenField={this.onOpenField}
+                        onSelectField={this.onSelectField} />
                 </View>
 
             </SafeAreaView>

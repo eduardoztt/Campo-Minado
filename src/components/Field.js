@@ -22,11 +22,11 @@ export default props => {
         if (nearMines == 2) color = '#2B520F'
         if (nearMines > 2 && nearMines < 6) color = '#f9060a'
         if (nearMines >= 6) color = '#f221a9'
-
     }
 
     return (
-        <TouchableWithoutFeedback onPress={props.onOpen}>
+        <TouchableWithoutFeedback onPress={props.onOpen}
+            onLongPress={props.onSelect}>
             <View style={styleField}>
                 {!mined && opened && nearMines > 0
                     ? <Text style={[styles.label, { color: color }]}>
